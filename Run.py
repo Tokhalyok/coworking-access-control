@@ -17,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.api = CoworkingAPI()
         self.accounts = self.api.get_accounts()
         self.setWindowTitle("🏢 Coworking Access Control")
-        self.setFixedSize(1000, 950)
+        self.setFixedSize(1000, 1000)
         self.init_ui()
 
     def init_ui(self):
@@ -42,7 +42,6 @@ class MainWindow(QtWidgets.QMainWindow):
         row2.addWidget(self.block_access_control())
         row2.addWidget(self.block_door())
 
-        # ── Комиссия на всю ширину ──
         row3 = QtWidgets.QHBoxLayout()
         row3.addWidget(self.block_commission())
 
@@ -116,7 +115,11 @@ class MainWindow(QtWidgets.QMainWindow):
         gb = self.make_group("👤  Информация о пользователе")
         layout = QtWidgets.QVBoxLayout(gb)
 
-        self.inp_info_adr = self.make_input("Адрес пользователя (0x...)")
+        # Подсказка
+        lbl_hint = QtWidgets.QLabel("Введите адрес, имя или номер телефона:")
+        lbl_hint.setStyleSheet("color:#757575; font-size:11px;")
+
+        self.inp_info_adr = self.make_input("0x... или Алибек или +77001234567")
         btn = self.make_btn("Получить информацию", "#2196F3")
         btn.clicked.connect(self.get_user_info)
 
@@ -130,16 +133,18 @@ class MainWindow(QtWidgets.QMainWindow):
         card_layout = QtWidgets.QVBoxLayout(card)
 
         self.lbl_u_name    = QtWidgets.QLabel("Имя: —")
+        self.lbl_u_phone   = QtWidgets.QLabel("Телефон: —")
         self.lbl_u_role    = QtWidgets.QLabel("Роль: —")
         self.lbl_u_access  = QtWidgets.QLabel("Доступ: —")
         self.lbl_u_exist   = QtWidgets.QLabel("Статус: —")
         self.lbl_u_balance = QtWidgets.QLabel("Баланс: —")
 
-        for lbl in [self.lbl_u_name, self.lbl_u_role, self.lbl_u_access,
-                    self.lbl_u_exist, self.lbl_u_balance]:
+        for lbl in [self.lbl_u_name, self.lbl_u_phone, self.lbl_u_role,
+                    self.lbl_u_access, self.lbl_u_exist, self.lbl_u_balance]:
             lbl.setStyleSheet("font-size:12px; padding:2px;")
             card_layout.addWidget(lbl)
 
+        layout.addWidget(lbl_hint)
         layout.addWidget(self.inp_info_adr)
         layout.addWidget(btn)
         layout.addWidget(card)
@@ -154,9 +159,10 @@ class MainWindow(QtWidgets.QMainWindow):
         gb = self.make_group("📝  Регистрация пользователя")
         layout = QtWidgets.QVBoxLayout(gb)
 
-        self.inp_reg_sender = self.make_input("Адрес Admin/SuperAdmin")
-        self.inp_reg_adr    = self.make_input("Адрес нового пользователя")
-        self.inp_reg_name   = self.make_input("Имя пользователя")
+        self.inp_reg_sender = self.make_input("Адрес Admin/SuperAdmin (0x...)")
+        self.inp_reg_adr    = self.make_input("Адрес нового пользователя (0x...)")
+        self.inp_reg_name   = self.make_input("Уникальное имя (например: Алибек)")
+        self.inp_reg_phone  = self.make_input("Номер телефона (например: +77001234567)")
 
         role_layout = QtWidgets.QHBoxLayout()
         lbl_role = QtWidgets.QLabel("Роль:")
@@ -178,6 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.inp_reg_sender)
         layout.addWidget(self.inp_reg_adr)
         layout.addWidget(self.inp_reg_name)
+        layout.addWidget(self.inp_reg_phone)
         layout.addLayout(role_layout)
         layout.addWidget(btn)
         layout.addStretch()
@@ -191,8 +198,13 @@ class MainWindow(QtWidgets.QMainWindow):
         gb = self.make_group("🔑  Управление доступом")
         layout = QtWidgets.QVBoxLayout(gb)
 
-        self.inp_ac_sender = self.make_input("Адрес Admin (кто выдаёт/отзывает)")
-        self.inp_ac_user   = self.make_input("Адрес пользователя")
+        self.inp_ac_sender = self.make_input("Адрес Admin (0x...)")
+
+        # Подсказка для поля пользователя
+        lbl_hint = QtWidgets.QLabel("Пользователь: адрес, имя или телефон")
+        lbl_hint.setStyleSheet("color:#757575; font-size:11px;")
+
+        self.inp_ac_user = self.make_input("0x... или Алибек или +77001234567")
 
         btn_grant  = self.make_btn("✅  Выдать доступ",    "#4CAF50")
         btn_revoke = self.make_btn("❌  Отозвать доступ",  "#f44336")
@@ -209,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         layout.addWidget(self.inp_ac_sender)
+        layout.addWidget(lbl_hint)
         layout.addWidget(self.inp_ac_user)
         layout.addWidget(btn_grant)
         layout.addWidget(btn_revoke)
@@ -226,13 +239,13 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout(gb)
 
         lbl_hint = QtWidgets.QLabel(
-            "Пользователь подходит к двери и нажимает кнопку.\n"
-            "Система проверяет доступ и записывает в блокчейн."
+            "Пользователь подходит к двери.\n"
+            "Введите адрес, имя или номер телефона:"
         )
         lbl_hint.setStyleSheet("color:#757575; font-size:11px;")
         lbl_hint.setWordWrap(True)
 
-        self.inp_door_user = self.make_input("Адрес пользователя")
+        self.inp_door_user = self.make_input("0x... или Алибек или +77001234567")
 
         btn_enter = QtWidgets.QPushButton("🚶  Войти в коворкинг")
         btn_enter.setFixedHeight(50)
@@ -265,29 +278,24 @@ class MainWindow(QtWidgets.QMainWindow):
         return gb
 
     # ─────────────────────────────────────────
-    # БЛОК: Комиссия (новый блок!)
+    # БЛОК: Комиссия
     # ─────────────────────────────────────────
 
     def block_commission(self):
         gb = self.make_group("💰  Информация о комиссии")
         layout = QtWidgets.QHBoxLayout(gb)
 
-        # Левая часть — карточки с данными
         cards_layout = QtWidgets.QHBoxLayout()
 
-        # Карточка 1 — Процент
         card1 = self.make_commission_card("Процент комиссии", "—", "#1a237e")
         self.lbl_comm_percent = card1.findChild(QtWidgets.QLabel, "value")
 
-        # Карточка 2 — Базовая стоимость
         card2 = self.make_commission_card("Базовая стоимость", "—", "#1565C0")
         self.lbl_comm_fee = card2.findChild(QtWidgets.QLabel, "value")
 
-        # Карточка 3 — Сумма комиссии
         card3 = self.make_commission_card("Сумма комиссии", "—", "#2E7D32")
         self.lbl_comm_amount = card3.findChild(QtWidgets.QLabel, "value")
 
-        # Карточка 4 — Всего собрано
         card4 = self.make_commission_card("Всего собрано", "—", "#E65100")
         self.lbl_comm_total = card4.findChild(QtWidgets.QLabel, "value")
 
@@ -296,15 +304,13 @@ class MainWindow(QtWidgets.QMainWindow):
         cards_layout.addWidget(card3)
         cards_layout.addWidget(card4)
 
-        # Кнопка обновить
-        btn_refresh = self.make_btn("🔄  Обновить комиссию", "#607D8B")
-        btn_refresh.setFixedWidth(200)
+        btn_refresh = self.make_btn("🔄  Обновить", "#607D8B")
+        btn_refresh.setFixedWidth(150)
         btn_refresh.clicked.connect(self.load_commission)
 
         layout.addLayout(cards_layout)
         layout.addWidget(btn_refresh)
 
-        # Загружаем сразу при старте
         self.load_commission()
         return gb
 
@@ -312,10 +318,8 @@ class MainWindow(QtWidgets.QMainWindow):
         frame = QtWidgets.QFrame()
         frame.setStyleSheet(f"""
             QFrame {{
-                background: {color};
-                border-radius: 8px;
-                padding: 8px;
-                margin: 4px;
+                background: {color}; border-radius: 8px;
+                padding: 8px; margin: 4px;
             }}
         """)
         fl = QtWidgets.QVBoxLayout(frame)
@@ -326,9 +330,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         lbl_value = QtWidgets.QLabel(value)
         lbl_value.setObjectName("value")
-        lbl_value.setStyleSheet(
-            "color: white; font-size:20px; font-weight:bold;"
-        )
+        lbl_value.setStyleSheet("color: white; font-size:20px; font-weight:bold;")
         lbl_value.setAlignment(QtCore.Qt.AlignCenter)
 
         fl.addWidget(lbl_title)
@@ -387,8 +389,28 @@ class MainWindow(QtWidgets.QMainWindow):
         if not is_valid_address(adr):
             self.warn(
                 f"Неверный адрес в поле '{field_name}'!\n"
-                f"Адрес должен начинаться с 0x и содержать 42 символа.\n"
-                f"Пример: 0x2a780F82bb407c3D233f6180997CeBfb9716f546"
+                f"Адрес должен начинаться с 0x и содержать 42 символа."
+            )
+            return False
+        return True
+
+    def validate_identity(self, value, field_name):
+        if not value:
+            self.warn(f"Поле '{field_name}' не может быть пустым!")
+            return False
+        if len(value) < 2:
+            self.warn(f"Поле '{field_name}' слишком короткое!")
+            return False
+        return True
+
+    def validate_phone(self, phone):
+        if not phone:
+            self.warn("Поле 'Телефон' не может быть пустым!")
+            return False
+        if not (phone.startswith("+") or phone.isdigit()):
+            self.warn(
+                "Неверный формат телефона!\n"
+                "Пример: +77001234567"
             )
             return False
         return True
@@ -407,25 +429,26 @@ class MainWindow(QtWidgets.QMainWindow):
     # ─────────────────────────────────────────
 
     def get_user_info(self):
-        adr = self.inp_info_adr.text().strip()
-        if not self.validate_address(adr, "Адрес пользователя"):
+        value = self.inp_info_adr.text().strip()
+        if not self.validate_identity(value, "Поиск пользователя"):
             return
         try:
-            d = self.api.get_user(adr)
-            # d = (name, role, hasAccess, isRegistered, balance)
-            role_name  = ROLES.get(d[1], str(d[1]))
-            role_color = ROLE_COLORS.get(d[1], "#000")
+            d, address = self.api.get_user_by_identity(value)
+            # d = (name, phone, role, hasAccess, isRegistered, balance)
+            role_name  = ROLES.get(d[2], str(d[2]))
+            role_color = ROLE_COLORS.get(d[2], "#000")
 
             self.lbl_u_name.setText(f"Имя: {d[0]}")
+            self.lbl_u_phone.setText(f"Телефон: {d[1]}")
             self.lbl_u_role.setText(f"Роль: {role_name}")
             self.lbl_u_role.setStyleSheet(
                 f"font-size:12px; padding:2px; color:{role_color}; font-weight:bold;"
             )
-            self.lbl_u_access.setText("Доступ: ✅ Есть" if d[2] else "Доступ: ❌ Нет")
+            self.lbl_u_access.setText("Доступ: ✅ Есть" if d[3] else "Доступ: ❌ Нет")
             self.lbl_u_exist.setText(
-                "Статус: Зарегистрирован" if d[3] else "Статус: Не зарегистрирован"
+                "Статус: Зарегистрирован" if d[4] else "Статус: Не зарегистрирован"
             )
-            self.lbl_u_balance.setText(f"Баланс: {d[4]} wei")
+            self.lbl_u_balance.setText(f"Баланс: {d[5]} wei")
         except Exception as e:
             self.err(e)
 
@@ -433,6 +456,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sender = self.inp_reg_sender.text().strip()
         adr    = self.inp_reg_adr.text().strip()
         name   = self.inp_reg_name.text().strip()
+        phone  = self.inp_reg_phone.text().strip()
 
         if not self.validate_address(sender, "Адрес Admin"):
             return
@@ -440,49 +464,52 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         if not self.validate_name(name):
             return
+        if not self.validate_phone(phone):
+            return
         if sender == adr:
             self.warn("Адрес Admin и адрес нового пользователя не могут совпадать!")
             return
 
         try:
-            self.api.register_user(sender, adr, name, self.cmb_role.currentIndex())
-            self.ok(f"Пользователь '{name}' успешно зарегистрирован!")
+            self.api.register_user(
+                sender, adr, name, phone, self.cmb_role.currentIndex()
+            )
+            self.ok(f"Пользователь '{name}' ({phone}) зарегистрирован!")
             self.refresh_header()
         except Exception as e:
             self.err(e)
 
     def grant_access(self):
-        sender = self.inp_ac_sender.text().strip()
-        adr    = self.inp_ac_user.text().strip()
+        sender   = self.inp_ac_sender.text().strip()
+        identity = self.inp_ac_user.text().strip()
 
         if not self.validate_address(sender, "Адрес Admin"):
             return
-        if not self.validate_address(adr, "Адрес пользователя"):
+        if not self.validate_identity(identity, "Пользователь"):
             return
 
         try:
-            self.api.grant_access(sender, adr)
+            self.api.grant_access(sender, identity)
             self.lbl_access_result.setText("✅ Доступ выдан! (списана комиссия 2%)")
             self.lbl_access_result.setStyleSheet(
                 "font-size:13px; font-weight:bold; padding:8px; "
                 "border-radius:6px; background:#E8F5E9; color:#2E7D32;"
             )
-            # Обновляем комиссию после выдачи доступа
             self.load_commission()
         except Exception as e:
             self.err(e)
 
     def revoke_access(self):
-        sender = self.inp_ac_sender.text().strip()
-        adr    = self.inp_ac_user.text().strip()
+        sender   = self.inp_ac_sender.text().strip()
+        identity = self.inp_ac_user.text().strip()
 
         if not self.validate_address(sender, "Адрес Admin"):
             return
-        if not self.validate_address(adr, "Адрес пользователя"):
+        if not self.validate_identity(identity, "Пользователь"):
             return
 
         try:
-            self.api.revoke_access(sender, adr)
+            self.api.revoke_access(sender, identity)
             self.lbl_access_result.setText("❌ Доступ отозван!")
             self.lbl_access_result.setStyleSheet(
                 "font-size:13px; font-weight:bold; padding:8px; "
@@ -492,11 +519,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.err(e)
 
     def check_access(self):
-        adr = self.inp_ac_user.text().strip()
-        if not self.validate_address(adr, "Адрес пользователя"):
+        identity = self.inp_ac_user.text().strip()
+        if not self.validate_identity(identity, "Пользователь"):
             return
         try:
-            has_access = self.api.check_access(adr)
+            address = self.api.resolve_identity(identity)
+            has_access = self.api.check_access(address)
             if has_access:
                 self.lbl_access_result.setText("🔍 Доступ: ЕСТЬ ✅")
                 self.lbl_access_result.setStyleSheet(
@@ -513,11 +541,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.err(e)
 
     def try_entry(self):
-        adr = self.inp_door_user.text().strip()
-        if not self.validate_address(adr, "Адрес пользователя"):
+        identity = self.inp_door_user.text().strip()
+        if not self.validate_identity(identity, "Пользователь"):
             return
         try:
-            granted = self.api.try_entry(adr)
+            granted = self.api.try_entry(identity)
 
             if granted:
                 self.lbl_lock.setText("🔓")
@@ -548,7 +576,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def load_commission(self):
         try:
             d = self.api.get_commission_info()
-            # d = (percent, fee, commissionAmt, totalCollected)
             self.lbl_comm_percent.setText(f"{d[0]}%")
             self.lbl_comm_fee.setText(f"{d[1]} wei")
             self.lbl_comm_amount.setText(f"{d[2]} wei")

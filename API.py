@@ -5,8 +5,9 @@ class CoworkingAPI:
     def __init__(self):
         self.w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
 
+        # СЮДА ВСТАВЬ НОВЫЙ АДРЕС ПОСЛЕ ДЕПЛОЯ
         contract_address = self.w3.to_checksum_address(
-            "0x34644BAef876a746F13e270131Da1339B6e86169"
+            "0xc0575C27b015Dad7ddF77D44c0832Bea7f92a4d5"
         )
 
         with open("abi.json", "r") as f:
@@ -27,13 +28,42 @@ class CoworkingAPI:
     def is_connected(self):
         return self.w3.is_connected()
 
+    def resolve_identity(self, value):
+        """
+        Универсальный метод — принимает адрес, имя или телефон
+        и возвращает адрес пользователя.
+
+        Логика определения:
+        0x + 42 символа  → это Ethereum адрес
+        начинается с +   → это телефон
+        только цифры     → это телефон
+        всё остальное    → это имя
+        """
+        value = value.strip()
+
+        # Адрес Ethereum
+        if value.startswith("0x") and len(value) == 42:
+            return self.w3.to_checksum_address(value)
+
+        # Телефон — начинается с + или только цифры
+        if value.startswith("+") or value.isdigit():
+            return self.contract.functions.getAddressByPhone(value).call()
+
+        # Имя — всё остальное
+        return self.contract.functions.getAddressByName(value).call()
+
     # ─────────────────────────────────────────
     # ЧТЕНИЕ → .call() бесплатно
     # ─────────────────────────────────────────
 
     def get_user(self, address):
-        # Возвращает (name, role, hasAccess, isRegistered, balance)
+        # Возвращает (name, phone, role, hasAccess, isRegistered, balance)
         return self.contract.functions.getUser(address).call()
+
+    def get_user_by_identity(self, value):
+        # Получить инфо о пользователе по адресу/имени/телефону
+        address = self.resolve_identity(value)
+        return self.get_user(address), address
 
     def check_access(self, address):
         return self.contract.functions.checkAccess(address).call()
@@ -59,10 +89,6 @@ class CoworkingAPI:
 
     def get_commission_info(self):
         # Возвращает (percent, fee, commissionAmt, totalCollected)
-        # percent      = 2 (процент)
-        # fee          = 100 (базовая стоимость)
-        # commissionAmt = 2 (сумма комиссии = fee * percent / 100)
-        # totalCollected = всего собрано комиссий
         return self.contract.functions.getCommissionInfo().call()
 
     def get_owner(self):
@@ -72,27 +98,32 @@ class CoworkingAPI:
     # ЗАПИСЬ → .transact() меняет блокчейн
     # ─────────────────────────────────────────
 
-    def register_user(self, sender, address, name, role):
+    def register_user(self, sender, address, name, phone, role):
         tx = self.contract.functions.registerUser(
-            address, name, int(role)
+            address, name, phone, int(role)
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
-    def grant_access(self, sender, address):
-        # Списывает 2% комиссию с sender (Admin)
+    def grant_access(self, sender, identity):
+        # Принимает адрес, имя или телефон
+        address = self.resolve_identity(identity)
         tx = self.contract.functions.grantAccess(
             address
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
-    def revoke_access(self, sender, address):
+    def revoke_access(self, sender, identity):
+        # Принимает адрес, имя или телефон
+        address = self.resolve_identity(identity)
         tx = self.contract.functions.revokeAccess(
             address
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
-    def try_entry(self, sender):
-        tx = self.contract.functions.tryEntry().transact({"from": sender})
+    def try_entry(self, identity):
+        # Принимает адрес, имя или телефон
+        address = self.resolve_identity(identity)
+        tx = self.contract.functions.tryEntry().transact({"from": address})
         receipt = self.w3.eth.wait_for_transaction_receipt(tx)
         logs = self.contract.events.EntryLogged().process_receipt(receipt)
         if logs:
