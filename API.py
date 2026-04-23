@@ -6,13 +6,17 @@ class CoworkingAPI:
         self.w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
 
         contract_address = self.w3.to_checksum_address(
-            "0x164f8353bf536D029b6aB84BC068Ab43C5b0bC9f"
+            "0x34644BAef876a746F13e270131Da1339B6e86169"
         )
 
         with open("abi.json", "r") as f:
             abi = json.load(f)
 
         self.contract = self.w3.eth.contract(address=contract_address, abi=abi)
+
+    # ─────────────────────────────────────────
+    # ВСПОМОГАТЕЛЬНЫЕ
+    # ─────────────────────────────────────────
 
     def get_accounts(self):
         return self.w3.eth.accounts
@@ -23,25 +27,24 @@ class CoworkingAPI:
     def is_connected(self):
         return self.w3.is_connected()
 
+    # ─────────────────────────────────────────
+    # ЧТЕНИЕ → .call() бесплатно
+    # ─────────────────────────────────────────
+
     def get_user(self, address):
-        # Возвращает (name, role, hasAccess, isRegistered)
-        # role: 0=User, 1=Admin, 2=SuperAdmin
+        # Возвращает (name, role, hasAccess, isRegistered, balance)
         return self.contract.functions.getUser(address).call()
 
     def check_access(self, address):
-        # Возвращает True/False — есть ли доступ
         return self.contract.functions.checkAccess(address).call()
 
     def get_log_count(self):
-        # Количество записей в журнале
         return self.contract.functions.getLogCount().call()
 
     def get_log_entry(self, log_id):
-        # Возвращает (user_address, timestamp, accessGranted)
         return self.contract.functions.getLogEntry(log_id).call()
 
     def get_full_log(self):
-        # Получить весь журнал — список всех записей
         count = self.get_log_count()
         log = []
         for i in range(count):
@@ -54,45 +57,53 @@ class CoworkingAPI:
             })
         return log
 
+    def get_commission_info(self):
+        # Возвращает (percent, fee, commissionAmt, totalCollected)
+        # percent      = 2 (процент)
+        # fee          = 100 (базовая стоимость)
+        # commissionAmt = 2 (сумма комиссии = fee * percent / 100)
+        # totalCollected = всего собрано комиссий
+        return self.contract.functions.getCommissionInfo().call()
+
+    def get_owner(self):
+        return self.contract.functions.owner().call()
+
+    # ─────────────────────────────────────────
+    # ЗАПИСЬ → .transact() меняет блокчейн
+    # ─────────────────────────────────────────
+
     def register_user(self, sender, address, name, role):
-        # sender  — кто вызывает (должен быть admin)
-        # address — адрес нового пользователя
-        # name    — имя
-        # role    — 0=User, 1=Admin, 2=SuperAdmin
         tx = self.contract.functions.registerUser(
             address, name, int(role)
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
     def grant_access(self, sender, address):
-        # Выдать доступ пользователю
+        # Списывает 2% комиссию с sender (Admin)
         tx = self.contract.functions.grantAccess(
             address
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
     def revoke_access(self, sender, address):
-        # Отозвать доступ пользователя
         tx = self.contract.functions.revokeAccess(
             address
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
     def try_entry(self, sender):
-        # Попытка входа — вызывает сам пользователь
-        # Контракт записывает в журнал да или нет
         tx = self.contract.functions.tryEntry().transact({"from": sender})
         receipt = self.w3.eth.wait_for_transaction_receipt(tx)
-
-        # Читаем событие EntryLogged из receipt
         logs = self.contract.events.EntryLogged().process_receipt(receipt)
         if logs:
             return logs[0]["args"]["granted"]
         return False
 
+    # ─────────────────────────────────────────
+    # ЭМУЛЯТОР ЗАМКА
+    # ─────────────────────────────────────────
+
     def emulate_lock(self, granted):
-        # Имитация физического замка
-        # В реальной системе здесь был бы сигнал на IoT устройство
         if granted:
             return "🔓 ЗАМОК ОТКРЫТ — Добро пожаловать!"
         else:

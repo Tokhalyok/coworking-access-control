@@ -8,7 +8,6 @@ ROLE_COLORS = {0: "#4CAF50", 1: "#2196F3", 2: "#9C27B0"}
 
 
 def is_valid_address(adr):
-    # Адрес Ethereum: начинается с 0x и длина 42 символа
     return adr.startswith("0x") and len(adr) == 42
 
 
@@ -18,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.api = CoworkingAPI()
         self.accounts = self.api.get_accounts()
         self.setWindowTitle("🏢 Coworking Access Control")
-        self.setFixedSize(1000, 850)
+        self.setFixedSize(1000, 950)
         self.init_ui()
 
     def init_ui(self):
@@ -43,10 +42,18 @@ class MainWindow(QtWidgets.QMainWindow):
         row2.addWidget(self.block_access_control())
         row2.addWidget(self.block_door())
 
+        # ── Комиссия на всю ширину ──
+        row3 = QtWidgets.QHBoxLayout()
+        row3.addWidget(self.block_commission())
+
         main.addLayout(row1)
         main.addLayout(row2)
+        main.addLayout(row3)
         main.addWidget(self.block_log())
 
+    # ─────────────────────────────────────────
+    # ШАПКА
+    # ─────────────────────────────────────────
 
     def build_header(self):
         frame = QtWidgets.QFrame()
@@ -54,8 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 #1a237e, stop:1 #283593);
-                border-radius: 10px;
-                padding: 6px;
+                border-radius: 10px; padding: 6px;
             }
         """)
         layout = QtWidgets.QHBoxLayout(frame)
@@ -74,8 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
         btn_refresh.setStyleSheet("""
             QPushButton {
                 background: white; color: #1a237e;
-                font-weight: bold; border-radius: 6px;
-                padding: 5px 12px;
+                font-weight: bold; border-radius: 6px; padding: 5px 12px;
             }
             QPushButton:hover { background: #E3F2FD; }
         """)
@@ -103,6 +108,9 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.lbl_status.setText("🔴 Ошибка подключения")
 
+    # ─────────────────────────────────────────
+    # БЛОК: Информация о пользователе
+    # ─────────────────────────────────────────
 
     def block_user_info(self):
         gb = self.make_group("👤  Информация о пользователе")
@@ -115,21 +123,20 @@ class MainWindow(QtWidgets.QMainWindow):
         card = QtWidgets.QFrame()
         card.setStyleSheet("""
             QFrame {
-                background: #F5F5F5;
-                border: 1px solid #E0E0E0;
-                border-radius: 8px;
-                padding: 4px;
+                background: #F5F5F5; border: 1px solid #E0E0E0;
+                border-radius: 8px; padding: 4px;
             }
         """)
         card_layout = QtWidgets.QVBoxLayout(card)
 
-        self.lbl_u_name   = QtWidgets.QLabel("Имя: —")
-        self.lbl_u_role   = QtWidgets.QLabel("Роль: —")
-        self.lbl_u_access = QtWidgets.QLabel("Доступ: —")
-        self.lbl_u_exist  = QtWidgets.QLabel("Статус: —")
+        self.lbl_u_name    = QtWidgets.QLabel("Имя: —")
+        self.lbl_u_role    = QtWidgets.QLabel("Роль: —")
+        self.lbl_u_access  = QtWidgets.QLabel("Доступ: —")
+        self.lbl_u_exist   = QtWidgets.QLabel("Статус: —")
+        self.lbl_u_balance = QtWidgets.QLabel("Баланс: —")
 
-        for lbl in [self.lbl_u_name, self.lbl_u_role,
-                    self.lbl_u_access, self.lbl_u_exist]:
+        for lbl in [self.lbl_u_name, self.lbl_u_role, self.lbl_u_access,
+                    self.lbl_u_exist, self.lbl_u_balance]:
             lbl.setStyleSheet("font-size:12px; padding:2px;")
             card_layout.addWidget(lbl)
 
@@ -139,6 +146,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addStretch()
         return gb
 
+    # ─────────────────────────────────────────
+    # БЛОК: Регистрация пользователя
+    # ─────────────────────────────────────────
 
     def block_register_user(self):
         gb = self.make_group("📝  Регистрация пользователя")
@@ -155,10 +165,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cmb_role.addItems(["0 — User", "1 — Admin"])
         self.cmb_role.setStyleSheet("""
             QComboBox {
-                border: 1px solid #BDBDBD;
-                border-radius: 4px;
-                padding: 5px;
-                font-size:12px;
+                border: 1px solid #BDBDBD; border-radius: 4px;
+                padding: 5px; font-size:12px;
             }
         """)
         role_layout.addWidget(lbl_role)
@@ -175,6 +183,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addStretch()
         return gb
 
+    # ─────────────────────────────────────────
+    # БЛОК: Управление доступом
+    # ─────────────────────────────────────────
 
     def block_access_control(self):
         gb = self.make_group("🔑  Управление доступом")
@@ -206,6 +217,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addStretch()
         return gb
 
+    # ─────────────────────────────────────────
+    # БЛОК: Эмулятор замка
+    # ─────────────────────────────────────────
 
     def block_door(self):
         gb = self.make_group("🚪  Эмулятор замка")
@@ -250,6 +264,80 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addStretch()
         return gb
 
+    # ─────────────────────────────────────────
+    # БЛОК: Комиссия (новый блок!)
+    # ─────────────────────────────────────────
+
+    def block_commission(self):
+        gb = self.make_group("💰  Информация о комиссии")
+        layout = QtWidgets.QHBoxLayout(gb)
+
+        # Левая часть — карточки с данными
+        cards_layout = QtWidgets.QHBoxLayout()
+
+        # Карточка 1 — Процент
+        card1 = self.make_commission_card("Процент комиссии", "—", "#1a237e")
+        self.lbl_comm_percent = card1.findChild(QtWidgets.QLabel, "value")
+
+        # Карточка 2 — Базовая стоимость
+        card2 = self.make_commission_card("Базовая стоимость", "—", "#1565C0")
+        self.lbl_comm_fee = card2.findChild(QtWidgets.QLabel, "value")
+
+        # Карточка 3 — Сумма комиссии
+        card3 = self.make_commission_card("Сумма комиссии", "—", "#2E7D32")
+        self.lbl_comm_amount = card3.findChild(QtWidgets.QLabel, "value")
+
+        # Карточка 4 — Всего собрано
+        card4 = self.make_commission_card("Всего собрано", "—", "#E65100")
+        self.lbl_comm_total = card4.findChild(QtWidgets.QLabel, "value")
+
+        cards_layout.addWidget(card1)
+        cards_layout.addWidget(card2)
+        cards_layout.addWidget(card3)
+        cards_layout.addWidget(card4)
+
+        # Кнопка обновить
+        btn_refresh = self.make_btn("🔄  Обновить комиссию", "#607D8B")
+        btn_refresh.setFixedWidth(200)
+        btn_refresh.clicked.connect(self.load_commission)
+
+        layout.addLayout(cards_layout)
+        layout.addWidget(btn_refresh)
+
+        # Загружаем сразу при старте
+        self.load_commission()
+        return gb
+
+    def make_commission_card(self, title, value, color):
+        frame = QtWidgets.QFrame()
+        frame.setStyleSheet(f"""
+            QFrame {{
+                background: {color};
+                border-radius: 8px;
+                padding: 8px;
+                margin: 4px;
+            }}
+        """)
+        fl = QtWidgets.QVBoxLayout(frame)
+
+        lbl_title = QtWidgets.QLabel(title)
+        lbl_title.setStyleSheet("color: rgba(255,255,255,0.8); font-size:11px;")
+        lbl_title.setAlignment(QtCore.Qt.AlignCenter)
+
+        lbl_value = QtWidgets.QLabel(value)
+        lbl_value.setObjectName("value")
+        lbl_value.setStyleSheet(
+            "color: white; font-size:20px; font-weight:bold;"
+        )
+        lbl_value.setAlignment(QtCore.Qt.AlignCenter)
+
+        fl.addWidget(lbl_title)
+        fl.addWidget(lbl_value)
+        return frame
+
+    # ─────────────────────────────────────────
+    # БЛОК: Журнал посещений
+    # ─────────────────────────────────────────
 
     def block_log(self):
         gb = self.make_group("📋  Журнал посещений (ончейн)")
@@ -273,10 +361,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table.setAlternatingRowColors(True)
         self.table.setStyleSheet("""
             QTableWidget {
-                border: 1px solid #E0E0E0;
-                border-radius: 6px;
-                gridline-color: #F5F5F5;
-                font-size: 11px;
+                border: 1px solid #E0E0E0; border-radius: 6px;
+                gridline-color: #F5F5F5; font-size: 11px;
             }
             QHeaderView::section {
                 background: #1a237e; color: white;
@@ -290,6 +376,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.table)
         return gb
 
+    # ─────────────────────────────────────────
+    # ВАЛИДАЦИЯ
+    # ─────────────────────────────────────────
 
     def validate_address(self, adr, field_name):
         if not adr:
@@ -313,6 +402,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return False
         return True
 
+    # ─────────────────────────────────────────
+    # ОБРАБОТЧИКИ
+    # ─────────────────────────────────────────
 
     def get_user_info(self):
         adr = self.inp_info_adr.text().strip()
@@ -320,7 +412,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         try:
             d = self.api.get_user(adr)
-            # d = (name, role, hasAccess, isRegistered)
+            # d = (name, role, hasAccess, isRegistered, balance)
             role_name  = ROLES.get(d[1], str(d[1]))
             role_color = ROLE_COLORS.get(d[1], "#000")
 
@@ -329,12 +421,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lbl_u_role.setStyleSheet(
                 f"font-size:12px; padding:2px; color:{role_color}; font-weight:bold;"
             )
-            self.lbl_u_access.setText(
-                "Доступ: ✅ Есть" if d[2] else "Доступ: ❌ Нет"
-            )
+            self.lbl_u_access.setText("Доступ: ✅ Есть" if d[2] else "Доступ: ❌ Нет")
             self.lbl_u_exist.setText(
                 "Статус: Зарегистрирован" if d[3] else "Статус: Не зарегистрирован"
             )
+            self.lbl_u_balance.setText(f"Баланс: {d[4]} wei")
         except Exception as e:
             self.err(e)
 
@@ -343,7 +434,6 @@ class MainWindow(QtWidgets.QMainWindow):
         adr    = self.inp_reg_adr.text().strip()
         name   = self.inp_reg_name.text().strip()
 
-        # Валидация всех полей
         if not self.validate_address(sender, "Адрес Admin"):
             return
         if not self.validate_address(adr, "Адрес нового пользователя"):
@@ -372,11 +462,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             self.api.grant_access(sender, adr)
-            self.lbl_access_result.setText("✅ Доступ выдан!")
+            self.lbl_access_result.setText("✅ Доступ выдан! (списана комиссия 2%)")
             self.lbl_access_result.setStyleSheet(
                 "font-size:13px; font-weight:bold; padding:8px; "
                 "border-radius:6px; background:#E8F5E9; color:#2E7D32;"
             )
+            # Обновляем комиссию после выдачи доступа
+            self.load_commission()
         except Exception as e:
             self.err(e)
 
@@ -453,6 +545,17 @@ class MainWindow(QtWidgets.QMainWindow):
             "font-size:13px; font-weight:bold; color:#757575;"
         )
 
+    def load_commission(self):
+        try:
+            d = self.api.get_commission_info()
+            # d = (percent, fee, commissionAmt, totalCollected)
+            self.lbl_comm_percent.setText(f"{d[0]}%")
+            self.lbl_comm_fee.setText(f"{d[1]} wei")
+            self.lbl_comm_amount.setText(f"{d[2]} wei")
+            self.lbl_comm_total.setText(f"{d[3]} wei")
+        except Exception as e:
+            self.err(e)
+
     def load_log(self):
         try:
             log = self.api.get_full_log()
@@ -480,6 +583,9 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.err(e)
 
+    # ─────────────────────────────────────────
+    # ВСПОМОГАТЕЛЬНЫЕ
+    # ─────────────────────────────────────────
 
     def ok(self, msg):
         QtWidgets.QMessageBox.information(self, "✅ Успех", msg)
