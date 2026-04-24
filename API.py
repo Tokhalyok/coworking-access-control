@@ -7,7 +7,7 @@ class CoworkingAPI:
 
         # СЮДА ВСТАВЬ НОВЫЙ АДРЕС ПОСЛЕ ДЕПЛОЯ
         contract_address = self.w3.to_checksum_address(
-            "0xc0575C27b015Dad7ddF77D44c0832Bea7f92a4d5"
+            "0x61874b6A498eAFa66d7eac7F0dCcc9A667053EB7"
         )
 
         with open("abi.json", "r") as f:
@@ -30,38 +30,26 @@ class CoworkingAPI:
 
     def resolve_identity(self, value):
         """
-        Универсальный метод — принимает адрес, имя или телефон
-        и возвращает адрес пользователя.
-
-        Логика определения:
-        0x + 42 символа  → это Ethereum адрес
-        начинается с +   → это телефон
-        только цифры     → это телефон
-        всё остальное    → это имя
+        Адрес 0x...  → напрямую
+        +7... цифры  → по телефону
+        Текст        → по имени
         """
         value = value.strip()
-
-        # Адрес Ethereum
         if value.startswith("0x") and len(value) == 42:
             return self.w3.to_checksum_address(value)
-
-        # Телефон — начинается с + или только цифры
         if value.startswith("+") or value.isdigit():
             return self.contract.functions.getAddressByPhone(value).call()
-
-        # Имя — всё остальное
         return self.contract.functions.getAddressByName(value).call()
 
     # ─────────────────────────────────────────
-    # ЧТЕНИЕ → .call() бесплатно
+    # READ
     # ─────────────────────────────────────────
 
     def get_user(self, address):
-        # Возвращает (name, phone, role, hasAccess, isRegistered, balance)
+        # (name, phone, role, hasAccess, isRegistered, balance)
         return self.contract.functions.getUser(address).call()
 
     def get_user_by_identity(self, value):
-        # Получить инфо о пользователе по адресу/имени/телефону
         address = self.resolve_identity(value)
         return self.get_user(address), address
 
@@ -88,14 +76,14 @@ class CoworkingAPI:
         return log
 
     def get_commission_info(self):
-        # Возвращает (percent, fee, commissionAmt, totalCollected)
+        # (percent, fee, commissionAmt, totalCollected)
         return self.contract.functions.getCommissionInfo().call()
 
     def get_owner(self):
         return self.contract.functions.owner().call()
 
     # ─────────────────────────────────────────
-    # ЗАПИСЬ → .transact() меняет блокчейн
+    # CREATE
     # ─────────────────────────────────────────
 
     def register_user(self, sender, address, name, phone, role):
@@ -104,8 +92,23 @@ class CoworkingAPI:
         ).transact({"from": sender})
         self.w3.eth.wait_for_transaction_receipt(tx)
 
+    # ─────────────────────────────────────────
+    # UPDATE
+    # ─────────────────────────────────────────
+
+    def update_user(self, sender, identity, new_name, new_phone, new_role):
+        # Обновить имя, телефон и роль (только SuperAdmin)
+        address = self.resolve_identity(identity)
+        tx = self.contract.functions.updateUser(
+            address, new_name, new_phone, int(new_role)
+        ).transact({"from": sender})
+        self.w3.eth.wait_for_transaction_receipt(tx)
+
+    # ─────────────────────────────────────────
+    # ДОСТУП
+    # ─────────────────────────────────────────
+
     def grant_access(self, sender, identity):
-        # Принимает адрес, имя или телефон
         address = self.resolve_identity(identity)
         tx = self.contract.functions.grantAccess(
             address
@@ -113,7 +116,6 @@ class CoworkingAPI:
         self.w3.eth.wait_for_transaction_receipt(tx)
 
     def revoke_access(self, sender, identity):
-        # Принимает адрес, имя или телефон
         address = self.resolve_identity(identity)
         tx = self.contract.functions.revokeAccess(
             address
@@ -121,7 +123,6 @@ class CoworkingAPI:
         self.w3.eth.wait_for_transaction_receipt(tx)
 
     def try_entry(self, identity):
-        # Принимает адрес, имя или телефон
         address = self.resolve_identity(identity)
         tx = self.contract.functions.tryEntry().transact({"from": address})
         receipt = self.w3.eth.wait_for_transaction_receipt(tx)
